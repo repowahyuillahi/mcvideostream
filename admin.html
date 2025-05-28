@@ -5,50 +5,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kelola Video</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #unlockSection { display: none; }
+  </style>
 </head>
 <body class="bg-light p-4">
   <div class="container">
-    <h2 class="mb-4">Admin Kelola Video</h2>
-    <form id="videoForm" class="mb-5" enctype="multipart/form-data">
+    <div id="lockSection">
+      <h4>Opppss...</h4>
+      <p>Silahkan masukkan Unlock Code untuk mengakses halaman ini.</p>
       <div class="mb-3">
-        <label class="form-label">Judul Video</label>
-        <input type="text" name="title" class="form-control" required>
+        <input type="password" id="unlockCode" class="form-control" placeholder="Unlock Code">
       </div>
-      <div class="mb-3">
-        <label class="form-label">Upload Video</label>
-        <input type="file" name="video" class="form-control" accept="video/*" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Keterangan</label>
-        <textarea name="description" class="form-control" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary">Tambah Video</button>
-    </form>
+      <button class="btn btn-primary" onclick="unlock()">Unlock</button>
+    </div>
 
-    <h4>Daftar Video</h4>
-    <table class="table table-bordered" id="videoTable">
-      <thead class="table-dark">
-        <tr>
-          <th>No</th>
-          <th>Judul Video</th>
-          <th>Video File</th>
-          <th>Tanggal Perubahan</th>
-          <th>Keterangan</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="unlockSection">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Admin Kelola Video</h2>
+        <button class="btn btn-danger" onclick="logout()">Log Out</button>
+      </div>
+
+      <form id="videoForm" class="mb-5" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Judul Video</label>
+          <input type="text" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Upload Video</label>
+          <input type="file" name="video" class="form-control" accept="video/*" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Keterangan</label>
+          <textarea name="description" class="form-control" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Tambah Video</button>
+      </form>
+
+      <h4>Daftar Video</h4>
+      <table class="table table-bordered" id="videoTable">
+        <thead class="table-dark">
+          <tr>
+            <th>No</th>
+            <th>Judul Video</th>
+            <th>Video File</th>
+            <th>Tanggal Perubahan</th>
+            <th>Keterangan</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
     const form = document.getElementById('videoForm');
     const tableBody = document.querySelector('#videoTable tbody');
+    const UNLOCK_KEY = 'adminUnlocked';
+
+    function unlock() {
+      const code = document.getElementById('unlockCode').value;
+      if (code === 'admin') {
+        localStorage.setItem(UNLOCK_KEY, 'true');
+        showAdminPage();
+      } else {
+        alert('Kode salah');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem(UNLOCK_KEY);
+      location.reload();
+    }
+
+    function showAdminPage() {
+      document.getElementById('lockSection').style.display = 'none';
+      document.getElementById('unlockSection').style.display = 'block';
+      updateVideoList();
+    }
+
+    async function updateVideoList() {
+      await fetch('updatevideos.php');
+      loadVideos();
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
-
       const response = await fetch('upload.php', {
         method: 'POST',
         body: formData
@@ -58,7 +102,7 @@
       if (result.success) {
         alert('Video berhasil diupload!');
         form.reset();
-        loadVideos();
+        updateVideoList();
       } else {
         alert('Gagal upload video: ' + result.message);
       }
@@ -93,13 +137,18 @@
       });
       const result = await res.json();
       if (result.success) {
-        loadVideos();
+        updateVideoList();
       } else {
         alert('Gagal menghapus video');
       }
     }
 
-    loadVideos();
+    // Initial check for unlock
+    if (localStorage.getItem(UNLOCK_KEY) === 'true') {
+      showAdminPage();
+    } else {
+      document.getElementById('lockSection').style.display = 'block';
+    }
   </script>
 </body>
 </html>
